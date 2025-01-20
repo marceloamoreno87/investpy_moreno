@@ -7,7 +7,8 @@ from time import gmtime, localtime, strftime
 
 import pandas as pd
 import pytz
-import requests
+import cloudscraper
+
 from lxml.html import fromstring
 from unidecode import unidecode
 
@@ -246,8 +247,9 @@ def economic_calendar(
     results = list()
 
     while True:
-        req = requests.post(url, headers=headers, data=data)
-
+        scraper = cloudscraper.create_scraper()
+        req = scraper.post(url, headers=headers, data=data)
+        
         root = fromstring(req.json()["data"])
         table = root.xpath(".//tr")
 

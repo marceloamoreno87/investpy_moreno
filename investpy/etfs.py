@@ -9,7 +9,8 @@ from random import randint
 import pandas as pd
 import pkg_resources
 import pytz
-import requests
+import cloudscraper
+
 from lxml.html import fromstring
 from unidecode import unidecode
 
@@ -443,7 +444,8 @@ def get_etf_recent_data(
 
     url = "https://www.investing.com/instruments/HistoricalDataAjax"
 
-    req = requests.post(url, headers=head, data=params)
+    scraper = cloudscraper.create_scraper()
+    req = scraper.post(url, headers=head, data=params)
 
     if req.status_code != 200:
         raise ConnectionError(
@@ -863,7 +865,8 @@ def get_etf_historical_data(
 
         url = "https://www.investing.com/instruments/HistoricalDataAjax"
 
-        req = requests.post(url, headers=head, data=params)
+        scraper = cloudscraper.create_scraper()
+        req = scraper.post(url, headers=head, data=params)
 
         if req.status_code != 200:
             raise ConnectionError(
@@ -1068,7 +1071,8 @@ def get_etf_information(etf, country, as_json=False):
         "Connection": "keep-alive",
     }
 
-    req = requests.get(url, headers=head)
+    scraper = cloudscraper.create_scraper()
+    req = scraper.get(url, headers=head)
 
     if req.status_code != 200:
         raise ConnectionError(
@@ -1244,7 +1248,8 @@ def get_etfs_overview(country, as_json=False, n_results=100):
         + "-etfs?&issuer_filter=0"
     )
 
-    req = requests.get(url, headers=head)
+    scraper = cloudscraper.create_scraper()
+    req = scraper.get(url, headers=head)
 
     if req.status_code != 200:
         raise ConnectionError(

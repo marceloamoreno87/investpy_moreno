@@ -3,7 +3,8 @@
 
 import pandas as pd
 import pkg_resources
-import requests
+import cloudscraper
+
 from lxml.html import fromstring
 from unidecode import unidecode
 
@@ -164,8 +165,8 @@ def technical_indicators(name, country, product_type, interval="daily"):
     }
 
     url = "https://www.investing.com/instruments/Service/GetTechincalData"
-
-    req = requests.post(url, headers=headers, data=data_values)
+    scraper = cloudscraper.create_scraper()
+    req = scraper.post(url, headers=headers, data=data_values)
 
     if req.status_code != 200:
         raise ConnectionError(
@@ -344,8 +345,8 @@ def moving_averages(name, country, product_type, interval="daily"):
     }
 
     url = "https://www.investing.com/instruments/Service/GetTechincalData"
-
-    req = requests.post(url, headers=headers, data=data_values)
+    scraper = cloudscraper.create_scraper()
+    req = scraper.post(url, headers=headers, data=data_values)
 
     if req.status_code != 200:
         raise ConnectionError(
@@ -548,8 +549,8 @@ def pivot_points(name, country, product_type, interval="daily"):
     }
 
     url = "https://www.investing.com/instruments/Service/GetTechincalData"
-
-    req = requests.post(url, headers=headers, data=data_values)
+    scraper = cloudscraper.create_scraper()
+    req = scraper.post(url, headers=headers, data=data_values)
 
     if req.status_code != 200:
         raise ConnectionError(

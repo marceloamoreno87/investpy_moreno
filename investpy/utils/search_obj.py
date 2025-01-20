@@ -7,7 +7,9 @@ from random import randint
 
 import pandas as pd
 import pytz
-import requests
+
+import cloudscraper
+
 from lxml.html import fromstring
 
 from .constant import FUNDS_INTERVAL_FILTERS, INTERVAL_FILTERS, OUTDATED2UPDATED
@@ -211,13 +213,15 @@ class SearchObj(object):
             "Connection": "keep-alive",
         }
 
-        req = requests.get(url, headers=headers)
+        scraper = cloudscraper.create_scraper()
+        req = scraper.get(url, headers=headers)
 
         if req.status_code != 200:
             raise ConnectionError(
                 f"ERR#0015: error {req.status_code}, try again later."
             )
 
+ 
         # Just change this list once the update is included for all the other products
         updated_for = ["stocks"]
         outdated_for = [
@@ -233,69 +237,29 @@ class SearchObj(object):
         ]
 
         root_ = fromstring(req.text)
-        updated_path = root_.xpath("//dl[@data-test='key-info']/div")
-        outdated_path = root_.xpath("//div[contains(@class, 'overviewDataTable')]/div")
+        updated_path = root_.xpath("//ul[@data-test='new-and-analysis-list']/li")
 
-        if not updated_path and not outdated_path:
+        if not updated_path:
             raise RuntimeError("ERR#0004: data retrieval error while scraping.")
 
-        path_, investing_updated = (
-            (updated_path, True) if updated_path else (outdated_path, False)
-        )
+        self.information = []
 
-        self.information = dict()
+        for elements_ in updated_path:
+            article = {}
+            title_element = elements_.xpath(".//a[@data-test='article-title-link']")[0]
+            article['title'] = title_element.text_content().strip()
+            article['link'] = title_element.get('href')
 
-        for elements_ in path_:
-            if investing_updated:
-                element = elements_.xpath(".//dd")[0]
-                title = element.get("data-test")
+            provider_elements = elements_.xpath(".//span[@data-test='news-provider-name']")
+            if provider_elements:
+                article['provider'] = provider_elements[0].text_content().strip()
             else:
-                element = elements_.xpath(".//span[@class='float_lang_base_1']")[0]
-                title = element.text_content().strip()
-                title = OUTDATED2UPDATED[title]
-                element = element.getnext()
-            try:
-                value = float(element.text_content().replace(",", ""))
-                if isinstance(value, float):
-                    if value.is_integer() is True:
-                        value = int(value)
-                self.information[title] = value if value != "N/A" else None
-                continue
-            except:
-                pass
-            try:
-                text = element.text_content().strip()
-                in_format = "%b %d, %Y" if investing_updated else "%m/%d/%Y"
-                text = datetime.strptime(text, in_format).strftime("%d/%m/%Y")
-                self.information[title] = text if text != "N/A" else None
-                continue
-            except:
-                pass
-            try:
-                text = element.text_content().strip()
-                if text.__contains__("1 = "):
-                    text = text.replace("1 = ", "")
-                    self.information[title] = text if text != "N/A" else None
-                    continue
-            except:
-                pass
-            try:
-                value = element.text_content().strip()
-                if value.__contains__("K"):
-                    value = float(value.replace("K", "").replace(",", "")) * 1e3
-                elif value.__contains__("M"):
-                    value = float(value.replace("M", "").replace(",", "")) * 1e6
-                elif value.__contains__("B"):
-                    value = float(value.replace("B", "").replace(",", "")) * 1e9
-                elif value.__contains__("T"):
-                    value = float(value.replace("T", "").replace(",", "")) * 1e12
-                if isinstance(value, float):
-                    if value.is_integer() is True:
-                        value = int(value)
-                self.information[title] = value if value != "N/A" else None
-                continue
-            except:
-                pass
+                article['provider'] = None
+
+            date_element = elements_.xpath(".//time[@data-test='article-publish-date']")[0]
+            article['publish_date'] = date_element.get('datetime')
+
+            self.information.append(article)
 
         return self.information
 
@@ -363,7 +327,8 @@ class SearchObj(object):
 
         url = "https://www.investing.com/instruments/Service/GetTechincalData"
 
-        req = requests.post(url, headers=headers, data=params)
+        scraper = cloudscraper.create_scraper()
+        req = scraper.post(url, headers=headers, data=params)
 
         if req.status_code != 200:
             raise ConnectionError(
@@ -425,7 +390,8 @@ class SearchObj(object):
             "Connection": "keep-alive",
         }
 
-        req = requests.get(url, headers=headers)
+        scraper = cloudscraper.create_scraper()
+        req = scraper.get(url, headers=headers)
 
         if req.status_code != 200:
             raise ConnectionError(
@@ -447,12 +413,9 @@ class SearchObj(object):
         ]
 
         root_ = fromstring(req.text)
-        updated_path = root_.xpath(
-            "//div[contains(@class, 'instrument-metadata_currency')]/span"
-        )
+        updated_path = root_.xpath("//div[@data-test='instrument-price-last']")
         outdated_path = root_.xpath(
-            "//div[@id='quotes_summary_current_data']/div/div/div[contains(@class,"
-            " 'bottom')]/span[@class='bold']"
+            "//div[@id='quotes_summary_current_data']/div/div/div[contains(@class, 'bottom')]/span[@class='bold']"
         )
 
         if not updated_path and not outdated_path:
@@ -551,7 +514,8 @@ class SearchObj(object):
 
         url = "https://www.investing.com/instruments/HistoricalDataAjax"
 
-        req = requests.post(url, headers=headers, data=params)
+        scraper = cloudscraper.create_scraper()
+        req = scraper.post(url, headers=headers, data=params)
 
         if req.status_code != 200:
             raise ConnectionError(
